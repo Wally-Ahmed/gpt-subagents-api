@@ -1,0 +1,24 @@
+{
+  "name": "gpt-subagents",
+  "version": "1.0.0",
+  "description": "MCP server that lets Claude Code delegate to OpenAI expert models (GPT-5.3-Codex and GPT-5.5) as subagents, with a library of orchestration patterns.",
+  "main": "dist/server.js",
+  "scripts": {
+    "build": "tsc",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "dotenv": "^17.4.2",
+    "openai": "^6.34.0",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@types/node": "^25.6.0",
+    "typescript": "^5.9.3"
+  }
+}
