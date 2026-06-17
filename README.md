@@ -1,4 +1,4 @@
-# gpt-subagents
+# gpt-subagents-api
 
 An [MCP](https://modelcontextprotocol.io) server that lets **Claude Code delegate to OpenAI
 "expert" models as subagents** — and ships a small, extensible library of **orchestration
@@ -14,12 +14,15 @@ blindly trusted.
 
 | Tool | Model | Use it for |
 |------|-------|------------|
-| `ask_gpt_codex` | GPT-5.3-Codex | Routine coding — patches, debugging, tests, repo inspection, concrete edits. Cheaper and faster. |
-| `ask_gpt_architect` | GPT-5.5 (high reasoning) | Hard reasoning, architecture decisions, security / threat modeling, review of large or high-risk changes. |
+| `ask_gpt_worker` | Caller-selected (e.g. gpt-5.3-codex) | Routine coding — patches, debugging, tests, repo inspection, concrete edits. Cheaper and faster. |
+| `ask_gpt_architect` | Caller-selected (e.g. gpt-5.5, high reasoning) | Hard reasoning, architecture decisions, security / threat modeling, review of large or high-risk changes. |
 
-> ⚠️ `ask_gpt_architect` can be **confidently wrong**. Treat its output as a *hypothesis* and verify
-> claims against real files, docs, and tests before acting. The orchestration patterns below exist
-> largely to make this discipline automatic.
+Both tools require a `model` parameter — pass any valid OpenAI model id. Suggested defaults are
+shown above, but the server does not hardcode any model.
+
+> ⚠️ Expert reasoning models can be **confidently wrong**. Treat `ask_gpt_architect` output as a
+> *hypothesis* and verify claims against real files, docs, and tests before acting. The same caution
+> applies to any review or audit — use the orchestration patterns below to make verification automatic.
 
 Both tools take a task/question plus optional `context`. Inbound context is run through a
 `sanitizeContext` pass that redacts obvious secrets (OpenAI/Anthropic keys) before it leaves your
@@ -39,8 +42,8 @@ Two tools expose them to the agent:
 - **`get_pattern("<name>")`** — the full text of one pattern.
 
 Patterns are read from disk **at call time**, so adding or editing one needs no rebuild. The
-server's startup `instructions` nudge the agent to consult patterns before any non-trivial expert
-work.
+server's startup `instructions` nudge the agent to consult patterns before any non-trivial
+`ask_gpt_architect` work — or any review, audit, or large-document analysis.
 
 **Shipped patterns**
 
@@ -78,7 +81,7 @@ This compiles to `dist/`. The server loads `.env` from the project root (one lev
 ### Register with Claude Code
 
 ```bash
-claude mcp add gpt-subagents -- node /absolute/path/to/gpt-subagents/dist/server.js
+claude mcp add gpt-subagents-api -- node /absolute/path/to/gpt-subagents-api/dist/server.js
 ```
 
 Or add it to your MCP client config manually:
@@ -86,15 +89,15 @@ Or add it to your MCP client config manually:
 ```jsonc
 {
   "mcpServers": {
-    "gpt-subagents": {
+    "gpt-subagents-api": {
       "command": "node",
-      "args": ["/absolute/path/to/gpt-subagents/dist/server.js"]
+      "args": ["/absolute/path/to/gpt-subagents-api/dist/server.js"]
     }
   }
 }
 ```
 
-Once connected, the server advertises four tools: `ask_gpt_codex`, `ask_gpt_architect`,
+Once connected, the server advertises four tools: `ask_gpt_worker`, `ask_gpt_architect`,
 `list_patterns`, and `get_pattern`.
 
 ---
@@ -102,9 +105,9 @@ Once connected, the server advertises four tools: `ask_gpt_codex`, `ask_gpt_arch
 ## Project layout
 
 ```
-gpt-subagents/
+gpt-subagents-api/
 ├── server.ts        # MCP server: tool defs + server instructions
-├── gptAgents.ts     # OpenAI calls (codex + architect) and secret sanitization
+├── gptAgents.ts     # OpenAI calls (worker + architect) and secret sanitization
 ├── patterns.ts      # Loads/parses pattern Markdown from patterns/
 ├── patterns/        # Orchestration patterns (one Markdown file each)
 │   ├── README.md
@@ -122,8 +125,8 @@ gpt-subagents/
   too, so dev-environment data doesn't leak into the repo.
 - **`sanitizeContext`** redacts `sk-…` keys and `OPENAI_API_KEY=` / `ANTHROPIC_API_KEY=` assignments
   from outbound context. It's a backstop, not a guarantee — keep secrets out of prompts.
-- **Verify expert output.** GPT-5.5 reasoning is powerful but fallible; the `two-layer-cross-model-expert`
-  pattern is the recommended way to act on it safely.
+- **Verify expert output.** Expert reasoning models are powerful but can be confidently wrong; the
+  `two-layer-cross-model-expert` pattern is the recommended way to act on `ask_gpt_architect` output safely.
 
 ---
 

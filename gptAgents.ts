@@ -13,14 +13,16 @@ function getClient(): OpenAI {
   return openai;
 }
 
-type CodexInput = {
+type WorkerInput = {
   task: string;
   context?: string;
+  model: string;
 };
 
 type ArchitectInput = {
   question: string;
   context?: string;
+  model: string;
 };
 
 // Best-effort secret redaction for anything we send to the external API. Every
@@ -82,17 +84,18 @@ async function callOpenAI(
   }
 }
 
-export async function askGptCodex({
+export async function askGptWorker({
   task,
   context = "",
-}: CodexInput): Promise<string> {
+  model,
+}: WorkerInput): Promise<string> {
   const client = getClient();
   const safeTask = sanitizeContext(task);
   const safeContext = sanitizeContext(context);
 
-  return callOpenAI("ask_gpt_codex", () =>
+  return callOpenAI("ask_gpt_worker", () =>
     client.responses.create({
-    model: "gpt-5.3-codex",
+    model,
     instructions: `
 You are a coding subagent. You handle routine implementation work.
 
@@ -125,6 +128,7 @@ ${safeContext}
 export async function askGptArchitect({
   question,
   context = "",
+  model,
 }: ArchitectInput): Promise<string> {
   const client = getClient();
   const safeQuestion = sanitizeContext(question);
@@ -132,7 +136,7 @@ export async function askGptArchitect({
 
   return callOpenAI("ask_gpt_architect", () =>
     client.responses.create({
-    model: "gpt-5.5",
+    model,
     reasoning: { effort: "xhigh" },
     instructions: `
 You are a senior architect subagent for hard reasoning tasks.

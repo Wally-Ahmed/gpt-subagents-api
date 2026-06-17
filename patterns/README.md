@@ -1,7 +1,7 @@
 # Orchestration Patterns
 
 Reusable playbooks that tell the calling agent **how** to drive the GPT subagent
-tools (`ask_gpt_codex`, `ask_gpt_architect`) well — not just *that* they exist.
+tools (`ask_gpt_worker`, `ask_gpt_architect`) well — not just *that* they exist.
 
 Each pattern is a single Markdown file in this folder. The MCP server reads them
 **at call time**, so adding or editing a pattern needs no rebuild or restart.
@@ -19,6 +19,7 @@ non-trivial expert work (reviews, audits, threat modeling, large-document analys
 | name | summary |
 |------|---------|
 | `two-layer-cross-model-expert` | Wrap the GPT expert in verifying Claude subagents so the orchestrator only ever sees parallel, context-cheap, ground-truth-checked conclusions. |
+| `worker-orchestrator` | Fan concrete implementation work out to the GPT worker through cheap Sonnet wrapper subagents — validated by execution, not a verification gate. |
 
 ## Adding a pattern
 
