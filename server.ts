@@ -33,9 +33,27 @@ you would act on), call list_patterns and apply the most relevant pattern, then 
 full with get_pattern. Patterns are reusable playbooks that keep expert output parallel,
 context-cheap, and verified against ground truth. For quick one-off lookups you may call the
 expert tools directly.
+
+DATA BOUNDARY: task, question, and context are sent to an external OpenAI API. Secrets are
+stripped on a best-effort basis (common API keys, tokens, and private keys are redacted), but
+this is not guaranteed — do NOT paste highly sensitive data and rely on redaction to protect it.
     `.trim(),
   }
 );
+
+// Input size caps. These bound what we forward to the API so an oversized
+// argument can't be used to burn API credit, overflow context, or buffer huge
+// strings. Comparable to the sibling subscription server's limits.
+const MAX_PROMPT_CHARS = 32_000;
+const MAX_CONTEXT_CHARS = 200_000;
+const MAX_PATTERN_NAME_CHARS = 100;
+
+// Convert any thrown error into a generic, caller-safe message. Details
+// (including the original error) are logged to stderr by gptAgents/here, never
+// returned to the MCP client where they could disclose local paths/metadata.
+function errorText(err: unknown): string {
+  return `Error: ${err instanceof Error ? err.message : String(err)}`;
+}
 
 server.tool(
   "ask_gpt_codex",
@@ -43,19 +61,31 @@ server.tool(
   {
     task: z
       .string()
+      .trim()
+      .min(1)
+      .max(MAX_PROMPT_CHARS)
       .describe(
         "The coding task: describe what to fix, implement, debug, or inspect"
       ),
     context: z
       .string()
+      .max(MAX_CONTEXT_CHARS)
       .optional()
       .describe(
         "Code snippets, error messages, stack traces, or other relevant context"
       ),
   },
   async ({ task, context }) => {
-    const result = await askGptCodex({ task, context });
-    return { content: [{ type: "text" as const, text: result }] };
+    try {
+      const result = await askGptCodex({ task, context });
+      return { content: [{ type: "text" as const, text: result }] };
+    } catch (err) {
+      console.error("[gpt-subagents] ask_gpt_codex handler error:", err);
+      return {
+        isError: true,
+        content: [{ type: "text" as const, text: errorText(err) }],
+      };
+    }
   }
 );
 
@@ -65,19 +95,31 @@ server.tool(
   {
     question: z
       .string()
+      .trim()
+      .min(1)
+      .max(MAX_PROMPT_CHARS)
       .describe(
         "The architecture, design, or complex reasoning question"
       ),
     context: z
       .string()
+      .max(MAX_CONTEXT_CHARS)
       .optional()
       .describe(
         "Relevant code, constraints, prior analysis, or background information"
       ),
   },
   async ({ question, context }) => {
-    const result = await askGptArchitect({ question, context });
-    return { content: [{ type: "text" as const, text: result }] };
+    try {
+      const result = await askGptArchitect({ question, context });
+      return { content: [{ type: "text" as const, text: result }] };
+    } catch (err) {
+      console.error("[gpt-subagents] ask_gpt_architect handler error:", err);
+      return {
+        isError: true,
+        content: [{ type: "text" as const, text: errorText(err) }],
+      };
+    }
   }
 );
 
@@ -115,6 +157,9 @@ server.tool(
   {
     name: z
       .string()
+      .trim()
+      .min(1)
+      .max(MAX_PATTERN_NAME_CHARS)
       .describe(
         "The pattern name from list_patterns, e.g. 'two-layer-cross-model-expert'"
       ),
@@ -124,11 +169,14 @@ server.tool(
     if (!pattern) {
       const available = patternNames();
       const list = available.length ? available.join(", ") : "(none found)";
+      // JSON.stringify + truncate the echoed name so control chars / a huge
+      // value can't inject newlines or formatting into the reflected message.
+      const echoed = JSON.stringify(name.slice(0, MAX_PATTERN_NAME_CHARS));
       return {
         content: [
           {
             type: "text" as const,
-            text: `No pattern named "${name}". Available patterns: ${list}`,
+            text: `No pattern named ${echoed}. Available patterns: ${list}`,
           },
         ],
       };

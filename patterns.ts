@@ -4,8 +4,11 @@ import { fileURLToPath } from "url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 // Compiled to <pkg>/dist/patterns.js, so the patterns/ folder is one level up.
-// Mirrors how server.ts resolves the colocated .env.
-const PATTERNS_DIR = resolve(__dirname, "..", "patterns");
+// Mirrors how server.ts resolves the colocated .env. GPT_SUBAGENTS_PATTERNS_DIR
+// overrides this (used by tests to point at a temp dir); unset in production.
+const PATTERNS_DIR =
+  process.env.GPT_SUBAGENTS_PATTERNS_DIR?.trim() ||
+  resolve(__dirname, "..", "patterns");
 
 export type PatternMeta = {
   name: string;
@@ -20,11 +23,14 @@ export type Pattern = PatternMeta & {
 
 // Minimal single-line `key: value` frontmatter parser. Avoids a dependency —
 // pattern frontmatter is intentionally simple (one line per field).
-function parseFrontmatter(raw: string): {
+export function parseFrontmatter(raw: string): {
   meta: Record<string, string>;
   body: string;
 } {
-  const match = raw.match(/^---\s*\n([\s\S]*?)\n---\s*\n?([\s\S]*)$/);
+  // The close delimiter must be a standalone `---` line (optionally trailed by
+  // spaces/tabs, then a newline or EOF) — a line like `---not-a-close` must NOT
+  // count as the close. Kept linear (no nested ambiguous quantifiers).
+  const match = raw.match(/^---[ \t]*\n([\s\S]*?)\n---[ \t]*(?:\n|$)([\s\S]*)$/);
   if (!match) {
     return { meta: {}, body: raw };
   }
@@ -43,7 +49,14 @@ function parseFrontmatter(raw: string): {
 // This keeps stray Markdown (notes, drafts, plugin-generated CLAUDE.local.md,
 // etc.) out of the catalog. Returns null for anything that isn't a real pattern.
 function loadPattern(file: string): Pattern | null {
-  const raw = readFileSync(join(PATTERNS_DIR, file), "utf8");
+  let raw: string;
+  try {
+    raw = readFileSync(join(PATTERNS_DIR, file), "utf8");
+  } catch {
+    // Unreadable entry: skip it rather than leak an absolute-path error to the
+    // client (the .env lives in the parent dir).
+    return null;
+  }
   const { meta, body } = parseFrontmatter(raw);
   if (!meta.name) return null;
   return {
@@ -61,9 +74,10 @@ function loadPattern(file: string): Pattern | null {
 function loadAll(): Pattern[] {
   let files: string[];
   try {
-    files = readdirSync(PATTERNS_DIR).filter(
-      (f) => f.endsWith(".md") && f.toLowerCase() !== "readme.md"
-    );
+    files = readdirSync(PATTERNS_DIR, { withFileTypes: true })
+      .filter((e) => e.isFile())
+      .map((e) => e.name)
+      .filter((f) => f.endsWith(".md") && f.toLowerCase() !== "readme.md");
   } catch {
     return [];
   }
