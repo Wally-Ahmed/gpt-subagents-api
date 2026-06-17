@@ -49,7 +49,7 @@ work.
 | [`two-layer-cross-model-expert`](./patterns/two-layer-cross-model-expert.md) | Wrap the GPT expert in verifying Claude subagents so the orchestrator only ever sees parallel, context-cheap, ground-truth-checked conclusions. |
 
 The two-layer pattern also ships a rendered, styled diagram at
-[`patterns/html/REVIEW-ARCHITECTURE.html`](./patterns/html/REVIEW-ARCHITECTURE.html) — open it in a
+[`patterns/html/two-layer-cross-model-expert.html`](./patterns/html/two-layer-cross-model-expert.html) — open it in a
 browser for the visual walkthrough.
 
 See [`patterns/README.md`](./patterns/README.md) to add your own.

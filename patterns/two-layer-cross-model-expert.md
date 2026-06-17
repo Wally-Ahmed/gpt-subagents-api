@@ -161,5 +161,5 @@ modeling, cross-checking research, or analyzing material too large to hold in th
 ---
 
 *A rendered, styled version of this diagram lives at
-[`html/REVIEW-ARCHITECTURE.html`](./html/REVIEW-ARCHITECTURE.html) — open it in a browser for the
+[`html/two-layer-cross-model-expert.html`](./html/two-layer-cross-model-expert.html) — open it in a browser for the
 visual walkthrough.*
