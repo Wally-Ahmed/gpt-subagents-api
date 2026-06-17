@@ -5,8 +5,7 @@ An [MCP](https://modelcontextprotocol.io) server that lets **Claude Code delegat
 patterns** that teach the calling agent *how* to use those experts well.
 
 Claude orchestrates; GPT gives a second opinion from a **different model family** (different blind
-spots). The patterns make that second opinion **parallel, context-cheap, and verified** instead of
-blindly trusted.
+spots). The patterns make that second opinion **parallel, context-cheap, and ground-truth-checked**.
 
 ---
 
@@ -19,10 +18,6 @@ blindly trusted.
 
 Both tools require a `model` parameter — pass any valid OpenAI model id. Suggested defaults are
 shown above, but the server does not hardcode any model.
-
-> ⚠️ Expert reasoning models can be **confidently wrong**. Treat `ask_gpt_architect` output as a
-> *hypothesis* and verify claims against real files, docs, and tests before acting. The same caution
-> applies to any review or audit — use the orchestration patterns below to make verification automatic.
 
 Both tools take a task/question plus optional `context`. Inbound context is run through a
 `sanitizeContext` pass that redacts obvious secrets (OpenAI/Anthropic keys) before it leaves your
@@ -125,11 +120,11 @@ gpt-subagents-api/
   too, so dev-environment data doesn't leak into the repo.
 - **`sanitizeContext`** redacts `sk-…` keys and `OPENAI_API_KEY=` / `ANTHROPIC_API_KEY=` assignments
   from outbound context. It's a backstop, not a guarantee — keep secrets out of prompts.
-- **Verify expert output.** Expert reasoning models are powerful but can be confidently wrong; the
-  `two-layer-cross-model-expert` pattern is the recommended way to act on `ask_gpt_architect` output safely.
+- **Verify expert output against ground truth.** The `two-layer-cross-model-expert` pattern is the
+  recommended way to drive `ask_gpt_architect` so its output is checked before you act on it.
 
 ---
 
 ## License
 
-ISC
+MIT

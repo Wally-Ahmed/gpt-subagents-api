@@ -25,8 +25,7 @@ This server lets you delegate to OpenAI "expert" models from inside your agent l
   faster; prefer it for concrete code work. You choose the model (e.g. gpt-5.3-codex).
 - ask_gpt_architect: hard reasoning, architecture decisions, security/threat modeling, and
   review of large or high-risk changes. Uses high-effort reasoning; you choose the model
-  (e.g. gpt-5.5). Expert reasoning models can be confidently wrong — treat output as a
-  hypothesis and verify against real files, docs, and tests before acting.
+  (e.g. gpt-5.5).
 
 ORCHESTRATION PATTERNS: Before any non-trivial use of ask_gpt_architect — or for any
 review, audit, threat modeling, or large-document analysis whose output you would act on —
@@ -99,7 +98,7 @@ server.tool(
 
 server.tool(
   "ask_gpt_architect",
-  "Delegate a hard reasoning task to an OpenAI model with high-effort reasoning. Use for architecture decisions, complex debugging strategy, security/threat modeling, or final review of large/high-risk changes. Pass any valid OpenAI model id; a strong reasoning model such as gpt-5.5 works well here. WARNING: expert reasoning models can be confidently wrong — treat output as a hypothesis and verify claims against actual files, docs, and tests before acting. For reviews and audits, prefer using list_patterns / get_pattern to apply an orchestration pattern that keeps expert output verified against ground truth.",
+  "Delegate a hard reasoning task to an OpenAI model with high-effort reasoning. Use for architecture decisions, complex debugging strategy, security/threat modeling, or final review of large/high-risk changes. Pass any valid OpenAI model id; a strong reasoning model such as gpt-5.5 works well here. For reviews and audits, use list_patterns / get_pattern to apply an orchestration pattern that keeps expert output verified against ground truth.",
   {
     question: z
       .string()

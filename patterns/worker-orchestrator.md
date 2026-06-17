@@ -82,7 +82,7 @@ comfortably. So choose by the *job* the wrapper does:
 | **Cost** | Orchestrator-model tokens spent shuttling raw inputs | A cheap Sonnet wrapper does the shuttling |
 | **Durability** | Results live only in the conversation | Each result is written to a durable artifact as it returns |
 
-> Note the row that's deliberately **absent**: *hallucination / verification*. Worker output is
+> Note the row that's deliberately **absent**: a *verification gate*. Worker output is
 > validated by execution, not trusted as a claim — that is the intentional difference from the
 > two-layer pattern, and why this one has no gate.
 
